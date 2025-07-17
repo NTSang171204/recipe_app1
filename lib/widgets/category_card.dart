@@ -30,9 +30,9 @@ Widget build(BuildContext context) {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF734C10), fontSize: 20)),
+            Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF734C10), fontSize: 15, ), textAlign: TextAlign.center,),
             Text("Tạo bởi", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF432805),)),
-            Text("$author", style: TextStyle(fontSize: 12,fontWeight: FontWeight.bold, color: Color(0xFF4322805)),),
+            Text(author, style: TextStyle(fontSize: 12,fontWeight: FontWeight.bold, color: Color(0xff4322805)),),
             Spacer(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

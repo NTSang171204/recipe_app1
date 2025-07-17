@@ -7,99 +7,103 @@ class RecipeCardSearch extends StatelessWidget {
   final String time;
 
   const RecipeCardSearch({
-    Key? key,
+    super.key,
     required this.imageUrl,
     required this.title,
     required this.author,
     required this.time,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 160,
-      child: Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        elevation: 2,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 🖼 Image + Heart Icon
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                child: Image.network(
+                  imageUrl,
+                  width: double.infinity,
+                  height: 140,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                  ),
+                  padding: const EdgeInsets.all(6),
+                  child: const Icon(Icons.favorite, color: Colors.red, size: 18),
+                ),
+              ),
+            ],
+          ),
+
+          // 📄 Title
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+
+          // 👤 Author + Time
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
               children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  child: Image.network(
-                    imageUrl,
-                    height: 148,
-                    width: 172,
-                    fit: BoxFit.cover,
+                Text(
+                  'By $author',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
                   ),
                 ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(5),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
-                      shape: BoxShape.circle,
+                const Spacer(),
+                Row(
+                  children: [
+                    const Icon(Icons.access_time, size: 14, color: Colors.amber),
+                    const SizedBox(width: 4),
+                    Text(
+                      time,
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                        fontSize: 12,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.favorite,
-                      color: Colors.red,
-                      size: 16,
-                    ),
-                  ),
+                  ],
                 ),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'By $author',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const Icon(
-                    Icons.timer,
-                    size: 14,
-                    color: Colors.grey,
-                  ),
-                  const SizedBox(width: 2),
-                  Text(
-                    time,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
+          ),
+
+          const SizedBox(height: 8),
+        ],
       ),
     );
   }
