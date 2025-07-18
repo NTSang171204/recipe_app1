@@ -23,7 +23,6 @@ class MyApp extends StatelessWidget {
       home: OnboardingPage(),
       routes: {
         '/home': (context) => HomePage(),
-        '/search':(context) => SearchPage(),
         '/bookmarks':(context) => SavedRecipeScreen(),
         '/profile':(context) => UserPage(),
       },

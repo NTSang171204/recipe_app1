@@ -34,3 +34,42 @@ class CategoryMealController {
     }
   }
 }
+
+//Search meal controller:
+
+class MealApi {
+  static Future<List<Meal>> searchMeals(String query) async {
+    final response = await http.get(
+      Uri.parse('https://www.themealdb.com/api/json/v1/1/search.php?s=$query'),
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['meals'] != null) {
+        return (data['meals'] as List).map((meal) => Meal.fromJson(meal)).toList();
+      }
+      return [];
+    } else {
+      throw Exception('Failed to load meals');
+    }
+  }
+}
+
+
+class SearchMealController {
+  final _meals = <Meal>[];
+  List<Meal> get meals => _meals;
+
+  Future<void> searchMeals(String query) async {
+    try {
+      _meals.clear();
+      if (query.isNotEmpty) {
+        _meals.addAll(await MealApi.searchMeals(query));
+      }
+    } catch (e) {
+      throw Exception('Error searching meals: $e');
+    }
+  }
+
+
+}

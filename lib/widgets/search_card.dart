@@ -5,105 +5,84 @@ class RecipeCardSearch extends StatelessWidget {
   final String title;
   final String author;
   final String time;
+  final VoidCallback ? onTap;
 
-  const RecipeCardSearch({
+    const RecipeCardSearch({
     super.key,
     required this.imageUrl,
     required this.title,
     required this.author,
     required this.time,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 🖼 Image + Heart Icon
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                child: Image.network(
-                  imageUrl,
-                  width: double.infinity,
-                  height: 140,
-                  fit: BoxFit.cover,
-                ),
+    return GestureDetector(
+      onTap: onTap, // Gọi callback khi nhấn
+      child: Container(
+        width: 210,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Color(0x26CEA700),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                imageUrl,
+                width: double.infinity,
+                height: 120,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Icon(Icons.error),
               ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
-                  ),
-                  padding: const EdgeInsets.all(6),
-                  child: const Icon(Icons.favorite, color: Colors.red, size: 18),
-                ),
-              ),
-            ],
-          ),
-
-          // 📄 Title
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
-          ),
-
-          // 👤 Author + Time
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF734C10),
+                fontSize: 15,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            Text(
+              "Tạo bởi",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF432805),
+              ),
+            ),
+            Text(
+              author,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF432805),
+              ),
+            ),
+            Spacer(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'By $author',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
+                  time,
+                  style: TextStyle(fontSize: 12, color: Color(0xFF432805)),
                 ),
-                const Spacer(),
-                Row(
-                  children: [
-                    const Icon(Icons.access_time, size: 14, color: Colors.amber),
-                    const SizedBox(width: 4),
-                    Text(
-                      time,
-                      style: TextStyle(
-                        color: Colors.grey[700],
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
+                Icon(
+                  Icons.article_outlined,
+                  size: 20,
+                  color: Color(0xFF432805),
                 ),
               ],
             ),
-          ),
-
-          const SizedBox(height: 8),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
-// Đảm bảo các import này đúng với đường dẫn file của bạn
+import 'package:recipe_app/pages/recipe_detail.dart';
+import 'package:http/http.dart' as http;
 import 'package:recipe_app/widgets/bottom_nav_bar.dart';
 import 'package:recipe_app/widgets/ingredient_button.dart';
 import 'package:recipe_app/widgets/search_card.dart';
+import 'dart:convert';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+  final String query;
+  const SearchPage({super.key, required this.query});
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -14,51 +17,52 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   int _currentIndex = 1; // Đặt chỉ mục mặc định cho trang tìm kiếm
   final TextEditingController _searchController = TextEditingController();
-  final List<Map<String, String>> _items = [
-    {
-      'imageUrl': 'https://www.themealdb.com/images/media/meals/xqvyqr1511638875.jpg',
-      'title': 'How to not get cooked',
-      'author': 'NTS',
-      'time': '30m',
-    },
-    {
-      'imageUrl': 'https://via.placeholder.com/600x400/0000FF/FFFFFF?text=help+me',
-      'title': 'help me',
-      'author': 'NTS',
-      'time': '15m',
-    },
-    {
-      'imageUrl': 'https://via.placeholder.com/600x400/00FF00/FFFFFF?text=got+cooked+anyway',
-      'title': 'got cooked anyway',
-      'author': 'NTS',
-      'time': '45m',
-    },
-  ];
-
-  List<Map<String, String>> _filteredItems = [];
+  List<Map<String, dynamic>> _filteredItems = [];
+  bool isLoading = true;
+  String errorMessage = '';
 
   @override
   void initState() {
     super.initState();
-    _filteredItems = _items;
+    _searchController.text = widget.query; // Đặt query vào TextField
     _searchController.addListener(_filterItems);
+    fetchMeals(widget.query); // Gọi API với query ban đầu
+  }
+
+  Future<void> fetchMeals(String query) async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://www.themealdb.com/api/json/v1/1/search.php?s=$query'),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _filteredItems = (data['meals'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          errorMessage = 'Lỗi khi tải dữ liệu';
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Lỗi: $e';
+        isLoading = false;
+      });
+    }
   }
 
   void _filterItems() {
     final query = _searchController.text.toLowerCase();
-    setState(() {
-      _filteredItems = _items.where((item) {
-        final title = item['title']!.toLowerCase();
-        final author = item['author']!.toLowerCase();
-        return title.contains(query) || author.contains(query);
-      }).toList();
-    });
+    fetchMeals(query); // Gọi lại API khi người dùng nhập lại
   }
 
   void _showFilterBottomSheet() {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // Cho phép bottom sheet chiếm toàn bộ chiều cao cần thiết
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
       ),
@@ -66,9 +70,9 @@ class _SearchPageState extends State<SearchPage> {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return DraggableScrollableSheet(
-              initialChildSize: 0.7, // Chiều cao ban đầu (70% màn hình)
-              minChildSize: 0.3, // Chiều cao tối thiểu
-              maxChildSize: 0.95, // Chiều cao tối đa
+              initialChildSize: 0.7,
+              minChildSize: 0.3,
+              maxChildSize: 0.95,
               expand: false,
               builder: (BuildContext context, ScrollController scrollController) {
                 return Container(
@@ -85,9 +89,9 @@ class _SearchPageState extends State<SearchPage> {
                               TextButton(
                                 onPressed: () {
                                   setState(() {
-                                    // Đặt lại trạng thái (ví dụ: xóa lựa chọn)
+                                    // Đặt lại trạng thái lọc (nếu cần)
                                   });
-                                  Navigator.pop(context); // Đóng bottom sheet
+                                  Navigator.pop(context);
                                 },
                                 child: const Text('Đặt lại', style: TextStyle(color: Colors.amber)),
                               ),
@@ -137,7 +141,7 @@ class _SearchPageState extends State<SearchPage> {
                       ElevatedButton(
                         onPressed: () {
                           // Thêm logic lọc nếu cần
-                          Navigator.pop(context); // Đóng bottom sheet
+                          Navigator.pop(context);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.amber,
@@ -186,60 +190,80 @@ class _SearchPageState extends State<SearchPage> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 12),
-              // Thanh tìm kiếm và nút lọc
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Tìm kiếm sản phẩm',
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Tìm kiếm món ăn',
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                        onSubmitted: (query) {
+                          fetchMeals(query); // Tìm kiếm lại khi nhấn Enter
+                        },
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton.outlined(
-                    onPressed: _showFilterBottomSheet,
-                    icon: Icon(Icons.filter_alt_sharp, color: Colors.amber[700]),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    IconButton.outlined(
+                      onPressed: _showFilterBottomSheet,
+                      icon: Icon(Icons.filter_alt_sharp, color: Colors.amber[700]),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 16),
-              // Danh sách kết quả
-              GridView.builder(
-                padding: const EdgeInsets.all(12),
+            ),
+            SliverToBoxAdapter(
+              child: isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : errorMessage.isNotEmpty
+                      ? Center(child: Text(errorMessage))
+                      : _filteredItems.isEmpty
+                          ? Center(child: Text('Không tìm thấy món ăn'))
+                          : null,
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.all(12),
+              sliver: SliverGrid(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
-                  childAspectRatio: 0.75, // Tỷ lệ khung hình của mỗi ô
+                  childAspectRatio: 0.75,
                 ),
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _filteredItems.length,
-                itemBuilder: (context, index) {
-                  final item = _filteredItems[index];
-                  return RecipeCardSearch(
-                    imageUrl: item['imageUrl']!,
-                    title: item['title']!,
-                    author: item['author']!,
-                    time: item['time']!,
-                  );
-                },
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final item = _filteredItems[index];
+                    return RecipeCardSearch(
+                      imageUrl: item['strMealThumb'] ?? 'https://via.placeholder.com/600x400',
+                      title: item['strMeal'] ?? 'Unknown',
+                      author: item['strSource'] ?? 'Ẩn danh',
+                      time: '30m', // API không cung cấp thời gian, sử dụng giá trị mặc định
+                      onTap: () {
+                        // Điều hướng sang RecipeDetailPage
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => RecipeDetailPage(title: item['strMeal'] ?? ''),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  childCount: _filteredItems.length,
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

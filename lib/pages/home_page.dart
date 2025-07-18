@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:recipe_app/Controllers/category_controller.dart';
+import 'package:recipe_app/Controllers/ingredient_controller.dart';
 import 'package:recipe_app/Controllers/meal_controller.dart';
 import 'package:recipe_app/models/category.dart';
 import 'package:recipe_app/models/recipe_card_model.dart';
+import 'package:recipe_app/pages/recipe_detail.dart';
 import 'package:recipe_app/widgets/recent_recipe.dart';
+import 'package:recipe_app/widgets/search_bar.dart';
 import '../widgets/recipe_card.dart';
 import '../widgets/category_card.dart';
 import '../widgets/ingredient_button.dart';
@@ -18,30 +21,37 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _currentIndex = 0; //trang hiện tại
+  int _currentIndex = 0; // Trang hiện tại
 
-  //recipe_card_by_country
-  List<Meal> _meals = []; // arrays các meals fetch được từ đất nước
-  bool _loadingMeals = true; //Đang load hay không
+  //Searchbar
+  final SearchMealController _searchController = SearchMealController();
+  final TextEditingController _searchEditController = TextEditingController();
+
+  //Meal theo khu vực
+  List<Meal> _meals = []; // Danh sách meals theo khu vực
+  bool _loadingMeals = true; // Đang load meals
   bool _showAll = false; // Hiển thị tất cả hay không
 
-  // Category buttons
-  List<Categories> _categories = [];
-  String _selectedCategory = '';
-  bool _loadingCategories = true; // Đang load hay không
+  //Theo category
+  List<Categories> _categories = []; // Danh sách categories
+  String _selectedCategory = ''; // Category được chọn
+  bool _loadingCategories = true; // Đang load categories
+  List<Meal> _categoryMeals = []; // Danh sách meals theo category
+  bool _loadingCategoryMeals = false; // Đang load category meals
 
-  //Category meals
-  List<Meal> _categoryMeals = [];
-  bool _loadingCategoryMeals = false;
+  //Danh sách ingredients
+  final IngredientController _ingredientController = IngredientController();
+  List<String> _selectedIngredientNames = []; // Danh sách nguyên liệu được chọn
 
   @override
   void initState() {
     super.initState();
     loadMeals();
     loadCategories();
+    _ingredientController.fetchIngredients();
   }
 
-  //Function load các món ăn từ nước
+  // Load meals theo khu vực
   void loadMeals() async {
     try {
       final data = await MealController.fetchByArea('japanese');
@@ -54,13 +64,13 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  //Function load các category
+  // Load danh sách categories
   void loadCategories() async {
     try {
       final data = await CategoryController.fetchCategories();
       setState(() {
         _categories = data;
-        _selectedCategory = data.first.name;
+        _selectedCategory = data.isNotEmpty ? data.first.name : '';
         _loadingCategories = false;
       });
     } catch (e) {
@@ -68,7 +78,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  //functionload các category meals
+  // Load meals theo category
   void loadMealsByCategory(String cat) async {
     setState(() {
       _loadingCategoryMeals = true;
@@ -85,6 +95,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       bottomNavigationBar: BottomNavBar(
@@ -103,50 +114,69 @@ class _HomePageState extends State<HomePage> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Search bar
-              SizedBox(height: 12),
-              TextField(
-                decoration: InputDecoration(
-                  hintText: 'Tìm kiếm sản phẩm',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  contentPadding: EdgeInsets.symmetric(vertical: 0),
+        child: CustomScrollView(
+          slivers: [
+            // Search bar
+            SliverToBoxAdapter(
+              child: CustomSearchBar(
+                controller: _searchEditController,
+                onSearch: (query) async {
+                  await _searchController.searchMeals(query);
+                  setState( () {});
+                },
+                onSubmitted: (query) async {
+                  await _searchController.searchMeals(query);
+                  setState(() {});
+                },
+              ),
+            ),
+            SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final meal = _searchController.meals[index];
+                return ListTile(
+                  leading: Image.network(meal.thumbnail, width: 50, height: 50),
+                  title: Text(meal.name),
+                  trailing: Icon(Icons.more_horiz, color: Colors.grey[700]),
+                  onTap: () {
+                    //Điều hướng sang Recipe Detail Page khi ấn vào món ăn
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => RecipeDetailPage(title: meal.name,)));
+                  },
+                );
+              },
+              childCount: _searchController.meals.length,
+            ),
+          ),
+            // Vị trí (Nhật Bản)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Nhật Bản',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _showAll = !_showAll;
+                        });
+                      },
+                      child: Text(
+                        _showAll ? 'Ẩn bớt' : 'Xem tất cả',
+                        style: TextStyle(color: Colors.amber[700]),
+                      ),
+                    ),
+                  ],
                 ),
               ),
+            ),
 
-              SizedBox(height: 16),
-              // Vị trí
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Nhật Bản',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      // Xử lý khi nhấn nút xem tất cả
-                      setState(() {
-                        _showAll = !_showAll; // Chuyển đổi trạng thái hiển thị
-                      });
-                    },
-                    child: Text(
-                      _showAll ? 'Ẩn bớt' : 'Xem tất cả',
-                      style: TextStyle(color: Colors.amber[700]),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 12),
-              // Danh sách bài đăng
-              SizedBox(
+            // Danh sách món ăn theo khu vực
+            SliverToBoxAdapter(
+              child: SizedBox(
                 height: 250,
                 child:
                     _loadingMeals
@@ -166,60 +196,76 @@ class _HomePageState extends State<HomePage> {
                           },
                         ),
               ),
+            ),
 
-              // Danh mục món ăn
-              SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Danh mục',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      // Xử lý khi nhấn nút xem tất cả
-                      setState(() {
-                        _showAll = !_showAll; // Chuyển đổi trạng thái hiển thị
-                      });
-                    },
-                    child: Text(
-                      _showAll ? 'Ẩn bớt' : 'Xem tất cả',
-                      style: TextStyle(color: Colors.amber[700]),
+            // Danh mục món ăn
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 5,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Danh mục',
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 24),
-              _loadingCategories
-                  ? const Center(child: CircularProgressIndicator())
-                  : SizedBox(
-                    height: 40, // đủ cao để chứa các button có chiều cao ~25
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _showAll ? _categories.length : 5,
-                      itemBuilder: (context, index) {
-                        final cat = _categories[index];
-                        final isSelected = _selectedCategory == cat.name;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: IngredientButton(
-                            label: cat.name,
-                            isSelected: isSelected,
-                            onTap: () {
-                              setState(() {
-                                _selectedCategory = cat.name;
-                                loadMealsByCategory(cat.name);
-                              });
-                            },
-                          ),
-                        );
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _showAll = !_showAll;
+                        });
                       },
+                      child: Text(
+                        _showAll ? 'Ẩn bớt' : 'Xem tất cả',
+                        style: TextStyle(color: Colors.amber[700]),
+                      ),
                     ),
-                  ),
+                  ],
+                ),
+              ),
+            ),
 
-              SizedBox(height: 12),
-              SizedBox(
+            // Danh sách categories
+            SliverToBoxAdapter(
+              child:
+                  _loadingCategories
+                      ? const Center(child: CircularProgressIndicator())
+                      : SizedBox(
+                        height: 40,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _showAll ? _categories.length : 5,
+                          itemBuilder: (context, index) {
+                            final cat = _categories[index];
+                            final isSelected = _selectedCategory == cat.name;
+                            return Padding(
+                              padding: const EdgeInsets.only(
+                                right: 8,
+                                left: 16,
+                                bottom: 8
+                              ),
+                              child: IngredientButton(
+                                label: cat.name,
+                                isSelected: isSelected,
+                                onTap: () {
+                                  setState(() {
+                                    _selectedCategory = cat.name;
+                                    loadMealsByCategory(cat.name);
+                                  });
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+            ),
+
+            // Danh sách món ăn theo category
+            SliverToBoxAdapter(
+              child: SizedBox(
                 height: 210,
                 child:
                     _loadingCategoryMeals
@@ -241,15 +287,24 @@ class _HomePageState extends State<HomePage> {
                           },
                         ),
               ),
+            ),
 
-              // Công thức gần đây
-              SizedBox(height: 24),
-              Text(
-                'Công thức gần đây',
-                style: TextStyle(fontWeight: FontWeight.bold),
+            // Công thức gần đây
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 24,
+                ),
+                child: Text(
+                  'Công thức gần đây',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
-              SizedBox(height: 12),
-              SizedBox(
+            ),
+
+            SliverToBoxAdapter(
+              child: SizedBox(
                 height: 200,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
@@ -289,25 +344,71 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               ),
+            ),
 
-              // Nguyên liệu
-              SizedBox(height: 24),
-              Text(
-                'Nguyên liệu',
-                style: TextStyle(fontWeight: FontWeight.bold),
+            // Nguyên liệu
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 24,
+                ),
+                child: Text(
+                  'Nguyên liệu',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
-              Wrap(
-                children: [
-                  IngredientButton(label: 'Danh mục 1', isSelected: true),
-                  IngredientButton(label: 'Danh mục 2'),
-                  IngredientButton(label: 'Danh mục 3'),
-                  IngredientButton(label: 'Danh mục 1'),
-                  IngredientButton(label: 'Danh mục 2'),
-                ],
+            ),
+
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: AnimatedBuilder(
+                animation: _ingredientController,
+                builder: (context, _) {
+                  if (_ingredientController.isLoading) {
+                    return const SliverToBoxAdapter(
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                  if (_ingredientController.error != null) {
+                    return SliverToBoxAdapter(
+                      child: Center(child: Text(_ingredientController.error!)),
+                    );
+                  }
+                  return SliverGrid(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 8,
+                          childAspectRatio: 100 / 40,
+                        ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final ingredient =
+                          _ingredientController.ingredients[index];
+                      return IngredientButton(
+                        label: ingredient.name,
+                        isSelected: _selectedIngredientNames.contains(
+                          ingredient.name,
+                        ),
+                        onTap: () {
+                          setState(() {
+                            if (_selectedIngredientNames.contains(
+                              ingredient.name,
+                            )) {
+                              _selectedIngredientNames.remove(ingredient.name);
+                            } else {
+                              _selectedIngredientNames.add(ingredient.name);
+                            }
+                          });
+                        },
+                      );
+                    }, childCount: _ingredientController.ingredients.length),
+                  );
+                },
               ),
-              SizedBox(height: 32),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

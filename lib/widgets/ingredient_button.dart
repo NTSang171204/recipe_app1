@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 
+import 'package:flutter/material.dart';
+
 class IngredientButton extends StatelessWidget {
   final String label;
   final bool isSelected;
@@ -17,12 +19,10 @@ class IngredientButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          minWidth: 80,
-          minHeight: 25,
-          maxWidth: 100,
-        ),
+      child: SizedBox(
+        // Đảm bảo kích thước cố định để GridView có thể tính toán
+        width: 100, 
+        height: 25, 
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
@@ -38,6 +38,7 @@ class IngredientButton extends StatelessWidget {
                 fontSize: 10,
               ),
               textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis, // Xử lý khi text quá dài
             ),
           ),
         ),
