@@ -28,7 +28,7 @@ class OnboardingPage extends StatelessWidget {
                 const SizedBox(height: 16),
                 ElevatedButton.icon(
                   onPressed: () {
-                    Navigator.pushReplacementNamed(context, '/search');
+                    Navigator.pushReplacementNamed(context, '/home');
                   },
                   icon: Icon(Icons.arrow_forward),
                   label: Text('Bắt đầu'),
